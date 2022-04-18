@@ -1,7 +1,7 @@
 /*---------------------------------------------
- *  Interpretador Little C - 0.1
+ *  Interpretador Mini C - 0.2
  *  Autor :	Cristiano Camacho
- *  Data  :	17/03/2022 a 12/04/2022
+ *  Data  :	17/03/2022 a 18/04/2022
  *  Desc  : Interpretador em C, implementando um
  *  subconjunto de C, mais detalhes no readme
  *
@@ -11,6 +11,7 @@
 
 void main(void)
 {
+    /*
     int a,b=6;
     printf("isso eh uma expressao %d", a=4+5);
 
@@ -18,7 +19,7 @@ void main(void)
         case 1: if(b>5){
             printf("\n switch");
         }
-
+*/
     return 0;
 }
 
