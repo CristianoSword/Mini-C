@@ -21,6 +21,7 @@ Interpretador em C, implementando um  subconjunto de instruções C
 
 Restrições:
     -O Comando Switch não será implementado.
+	
     -Os comandos if, while, do e for devem ser blocos de código encerrados entre chaves.
 
 
