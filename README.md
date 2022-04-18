@@ -2,7 +2,7 @@
 Interpretador em C, implementando um  subconjunto de instruções C
 
 
-###Lista de Recursos no interpretador Mini-C:
+# Lista de Recursos no interpretador Mini-C:
 
 - [ ] Funções parametrizadas com variáveis locais.
 - [ ] Recursividade.
