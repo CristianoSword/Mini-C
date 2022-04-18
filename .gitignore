@@ -1,5 +1,7 @@
 # Prerequisites
 *.d
+*.cbp
+*.layout
 
 # Object files
 *.o
