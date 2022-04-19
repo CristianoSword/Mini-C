@@ -22,6 +22,7 @@ Interpretador em C, implementando um  subconjunto de instruções C
 - [ ] Programas exemplos para demonstração do Mini-C.
 
 Restrições:
+<br>
 -O Comando Switch não será implementado.<br>
 -Os comandos if, while, do e for devem estar entre blocos de código de chaves.
 
