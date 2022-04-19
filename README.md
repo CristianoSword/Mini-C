@@ -18,6 +18,8 @@ Interpretador em C, implementando um  subconjunto de instruções C
 - [ ] Suporte a parênteses.
 - [ ] Funções retornando inteiros.
 - [ ] Comentários.
+- [ ] Funções retornando inteiros.
+- [ ] Programas exemplos para demonstração do Mini-C.
 
 Restrições:
 -O Comando Switch não será implementado.
