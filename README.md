@@ -17,7 +17,7 @@ Interpretador em C, implementando um  subconjunto de instruções C
 - [ ] Estes operadores: +, -, *, %, <, >, <=, >=, ==, !=, - unário e + unário.
 - [ ] Suporte a parênteses.
 - [ ] Funções retornando inteiros.
-- [ ] Comentários.
+- [x] Comentários.
 - [ ] Funções retornando inteiros.
 - [ ] Programas exemplos para demonstração do Mini-C.
 
