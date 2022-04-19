@@ -1,7 +1,7 @@
 /*---------------------------------------------
  *  Interpretador Mini C - 0.2
  *  Autor :	Cristiano Camacho
- *  Data  :	17/03/2022 a 18/04/2022
+ *  Data  :	17/03/2022 a 19/04/2022
  *  Desc  : Interpretador em C, implementando um
  *  subconjunto de C, mais detalhes no readme
  *
@@ -87,7 +87,7 @@ struct commands
 char token[80];
 char token_type, tok;
 
-int functos; /* indice para o topo da piulha de chamadas de funcao */
+int functos; /* indice para o topo da pilha de chamadas de funcao */
 
 int func_index; /* indice na tabela de funcoes */
 int gvar_index; /* indice na tabela global de varaiveis */
@@ -435,9 +435,158 @@ void assign_var(char *var_name, int value)
             return;
         }
     }
+    if(i < call_stack[functos-1])
+        /* se nao eh local, tente na tabela de variaveis globais */
+        for(i=0 ;i<NUM_GLOBAL_VARS; i++)
+            if(!strcmp(global_vars[i].var_name, var_name)) {
+                global_vars[i].value = value;
+                return;
+            }
+        sntx_err(NOT_VAR);   /* variavel nao encontrada */
 }
 
+/* encontra o valor de uma variavel */
+int find_var(char *s)
+{
+    register int i;
 
+    /* primeiro, veja se eh uma variavel local */
+    for(i=lvartos-1; i>=call_stack[functos-1] ;i--)
+        if(!strcmp(local_var_stack[i].var_name, token))
+            return local_var_stack[i].value;
+
+    /* se nao for local, tente na tabela de variaveis globais */
+    for(i=0; i<NUM_GLOBAL_VARS ;i++)
+        if(!strcmp(global_vars[i].var_name, s))
+            return global_vars[i].value;
+
+    sntx_err(NOT_VAR);   /* variavel nao encontrada */
+}
+
+/* Determina se um identificador eh uma variavel.
+   Retorna 1 se a variavel eh encontrada. 0 caso contrario.
+*/
+int is_var(char *s)
+{
+    register int i;
+
+    /* primeiro, veja se eh uma variavel local */
+    for(i=lvartos-1; i>=call_stack[functos-1] ;i--)
+        if(!strcmp(local_var_stack[i].var_name, token))
+            return 1;
+
+    /* se nao for local, tente  variaveis globais */
+    for(i=0; i<NUM_GLOBAL_VARS; i++)
+        if(!strcmp(global_vars[i].var_name, s))
+            return 1;
+
+    return 0;
+}
+
+/* Executa um comando IF */
+void exec_if(void)
+{
+    int cond;
+    eval_exp(&cond); /* obtem expressao esquerda */
+
+    if(cond) {  /* eh verdadeira, portanto processa alvo do IF */
+        interp_block();
+    }
+    else{   /* caso contrario, ignore o bloco de IF e processe o ELSE, se existir */
+        find_eob();  /* acha o fim da proxima linha */
+        get_token();
+
+        if(tok!=ELSE) {
+            putback();  /* devolve o token se nao eh ELSE */
+            return;
+        }
+        interp_block();
+    }
+}
+
+/* Executa um laço FOR */
+void exec_for(void)
+{
+    int cond;
+    char *temp;
+
+    putback();
+    temp = prog;  /* salva a posicao do inicio do laço while */
+    get_token();
+    eval_exp(&cond);    /* verifica a expressao condicional */
+    if(cond) interp_block();  /* se verdadeira, interpreta */
+        else{   /* caso contrario, ignore o laco */
+            find_eob();
+            return;
+        }
+        prog = temp; /* volra para o inicio do laco */
+}
+
+/* Executa um laco DO */
+void exec_do(void)
+{
+    int cond;
+    char *temp;
+
+    putback();
+    temp = prog; /* salva posicao do inicio do laco do */
+    get_token(); /* obtem inicio do laco */
+    interp_block(); /* interpreta o laço */
+    get_token();
+    if(tok!=WHILE) sntx_err(WHILE_EXPECTED);
+    eval_exp(&cond); /* verifica a condicao do laco */
+    if(cond) prog = temp; /* se verdadeira, repete; caso contrario, continua */
+}
+
+/* Acha o fim do bloco */
+void find_eob(void)
+{
+    int brace;
+
+    get_token();
+    brace = 1;
+    do{
+        get_token();
+        if(*token=='{') brace++;
+        else if(*token=='}') brace--;
+    }while(brace);
+}
+
+/* Executa um laco FOR */
+void exec_for(void)
+{
+    int cond;
+    char *temp, *temp2;
+    int brace;
+
+    get_token();
+    eval_exp(&cond); /* inicializa a expressao */
+    if(*token!=';') sntx_err(SEMI_EXPECTED);
+    prog++;
+    temp = prog;
+    for(;;) {
+        eval_exp(&cond); /* verifica a condicao */
+        if(*token!=';') sntx_err(SEMI_EXPECTED);
+        prog++;     /* passa do ; */
+        temp2 = prog;
+
+        /* Acha o inicio do bloco do for */
+        brace = 1;
+        while(brace) {
+            get_token();
+            if(*token=='(') brace++;
+            if(*token==')') brace--;
+        }
+        if(cond) interp_block();   /* se verdadeiro, interpreta */
+            else{                  /* caso contrario, igmora o laco */
+                find_eob();
+                return;
+            }
+            prog = temp2;
+            eval_exp(&cond);        /* efetua o incremento */
+            prog = temp;            /* volta para o inicio */
+    }
+}
 
 
 
