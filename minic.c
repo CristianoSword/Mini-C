@@ -41,24 +41,24 @@ enum error_msg
     NEST_FUNC, RET_NOCALL, PAREN_EXPECTED, WHILE_EXPECTED, QUOTE_EXPECTED, NOTE_TEMP, TOO_MANY_LVARS
 };
 
-extern char *prog ; /* posicao corrente no codigo fonte */
-extern char *p_buf; /* aponta para o inicio da area de carga do programa */
+char *prog ; /* posicao corrente no codigo fonte */
+char *p_buf; /* aponta para o inicio da area de carga do programa */
 
-extern jmp_buf e_buf; /* mantem ambiente para longjmp() */
+jmp_buf e_buf; /* mantem ambiente para longjmp() */
 
 /* Uma matriz destas estruturas manterá a informação associada com as variaveis globais */
 
-extern struct var_type
+struct var_type
 {
     char var_name[ID_LEN];
     int var_type;
     int value;
 } global_vars[NUM_GLOBAL_VARS];
 
-struct var_type local_var_stack[NUM_GLOBAL_VARS];
+struct var_type local_var_stack[NUM_LOCAL_VARS];
 
 /* Esta eh a pilha de chamadas de funcao */
-extern struct func_type
+struct func_type
 {
     char func_name[ID_LEN];
     char *loc; /* posicao do ponto de entrada da funcao no arquivo */
@@ -109,7 +109,7 @@ int func_pop(void), is_var(char *s), get_token(void);
 
 char *find_func(char *name);
 
-main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
     if(argc!=2) {
         printf("Uso: minic <nome_de_arquivo>\n");
@@ -126,18 +126,16 @@ main(int argc, char *argv[])
     if(!load_program(p_buf, argv[1])) exit(1);
     if(setjmp(e_buf)) exit(1); /* inicializa buffer de long jump */
 
+    gvar_index = 0; /* inicializa indice de variaveis globais */
     /* define um ponteiro de programa para o inicio do buffer */
     prog = p_buf;
-    prescan(); /* procura a pósicao de todas as funcoes e variaveis globais no programa */
 
-    gvar_index = 0; /* inicializa indice de variaveis globais */
+    prescan(); /* procura a posicao de todas as funcoes e variaveis globais no programa */
+
     lvartos = 0;    /* inicializa indice de variaveis locais */
-
-    functos = 0;    /* inicializa o indiceda pilha de CALL */
-
+    functos = 0;    /* inicializa o indexa pilha de CALL */
     /* prepara chamada de main() */
     prog = find_func("main"); /* acha o ponto de inicio do programa */
-
     prog--; /* volta para o inicial ( */
     strcpy(token, "main");
 
@@ -165,7 +163,7 @@ void interp_block(void)
             eval_exp(&value); /* processa a expressao */
             if(*token!=';') sntx_err(SEMI_EXPECTED);
         }
-        else if (token_type==BLOCK) { /* se delimetadorde bloco... */
+        else if(token_type==BLOCK) { /* se delimetadorde bloco... */
                 if(*token=='{') /* for igual a um bloco*/
                     block = 1;  /* interpretando um bloco nao um comando */
                 else return;    /* eh um }, portanto nao devolve */
@@ -202,7 +200,7 @@ void interp_block(void)
 }
 
 /* carrega um programa */
-load_program(char *p, char *fname)
+int load_program(char *p, char *fname)
 {
     FILE *fp;
     int i = 0;
@@ -213,7 +211,7 @@ load_program(char *p, char *fname)
         *p = getc(fp);
         p++; i++;
     } while(!feof(fp) && i<PROG_SIZE);
-    if(*p(p-2)==0x1a) *(p-2) = '\0'; /* encerra o programa com nulo */
+    if(*(p-2)==0x1a) *(p-2) = '\0'; /* encerra o programa com nulo */
 
     else *(p-1) = '\0';
     fclose(fp);
@@ -221,7 +219,7 @@ load_program(char *p, char *fname)
 }
 
 /* Acha uma posicao de todas as funcoes no programa e armazena todas as varaiveis globais */
-void prescan()
+void prescan(void)
 {
     char *p;
     char temp[32];
@@ -261,7 +259,7 @@ void prescan()
   }
 
 /* devolve o ponto de entrada da funcao especializada, devolve NULL se nao encontrou */
-char *find_func()
+char *find_func(char *name)
 {
     register int i;
 
@@ -274,18 +272,23 @@ char *find_func()
 /* declara uma variavel global */
 void decl_global(void)
 {
+    int vartype;
+
     get_token(); /* obtem um tipo */
 
-    global_vars[gvar_index].var_type = tok;
-    global_vars[gvar_index].value = 0; /* inicializa com zero */
+    vartype = tok;
+
+
 
     do{     /* processa lista separada por virgulas */
+        global_vars[gvar_index].var_type = vartype;
+        global_vars[gvar_index].value = 0; /* inicializa com zero */
         get_token();  /* obtem nome */
-        strcpy(global_vars[gvar_index].var_name. token);
+        strcpy(global_vars[gvar_index].var_name, token);
         get_token();
         gvar_index++;
     }while(*token==',');
-    if*token!=';') sntx_err(SEMI_EXPECTED);
+    if(*token!=';') sntx_err(SEMI_EXPECTED);
 }
 
 /* declara uma variavel local */
@@ -301,9 +304,9 @@ void decl_local(void)
     do{     /* processa lista separada por virgulas */
         get_token();    /* obtem nome da variavel */
         strcpy(i.var_name, token);
-        local_push();
+        local_push(i);
         get_token();
-        gvar_index++;
+        //gvar_index++;
     }while(*token==',');
         if(*token!=';') sntx_err(SEMI_EXPECTED);
 }
@@ -351,12 +354,12 @@ void get_args(void)
         get_token();
         count++;
     }while(*token==',');
-    cout--;
+    count--;
     /* agora, empilha em local_car_stack na ordem invertida */
     for(; count>=0; count--) {
         i.value = temp[count];
         i.var_type = ARG;
-        local_push();
+        local_push(i);
     }
 }
 
@@ -379,7 +382,8 @@ void get_params(void)
             strcpy(p->var_name, token);
             get_token();
             i--;
-        } else break;
+        }
+        else break;
     }   while (*token==',');
     if(*token!=')') sntx_err(PAREN_EXPECTED);
 }
@@ -504,8 +508,8 @@ void exec_if(void)
     }
 }
 
-/* Executa um laço FOR */
-void exec_for(void)
+/* Executa um laço while */
+void exec_while(void)
 {
     int cond;
     char *temp;
@@ -552,7 +556,7 @@ void find_eob(void)
     }while(brace);
 }
 
-/* Executa um laco FOR */
+/* Executa um laco for */
 void exec_for(void)
 {
     int cond;
