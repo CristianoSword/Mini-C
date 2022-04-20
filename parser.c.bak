@@ -64,7 +64,8 @@ extern struct commands
 int call_getche(void), call_putch(void);
 int call_puts(void), print(void), getnum(void);
 
-struct intern_func_type{
+struct intern_func_type
+{
     char *f_name; /* nome da funcao */
     int (*p)();  /* ponteiro para funcao */
 }intern_func[] ={
@@ -82,15 +83,17 @@ extern char tok;         /* representacao interna do token */
 
 extern int ret_value;   /* valor de retorno de funcao */
 
-void eval_exp(int *value), eval_exp1(int *value);
+void eval_exp(int *value);
+void eval_exp1(int *value);
 void eval_exp2(int *value);
 void eval_exp3(int *value), eval_exp4(int *value);
 void eval_exp5(int *value), atom(int *value);
 void eval_exp0(int *value);
+
 void sntx_err(int error), putback(void);
 void assign_var(char *var_name, int value);
 int isdelim(char c), look_up(char *s), iswhite(char c);
-int find_var(char *s), get_token(void);
+int find_var(char c), get_token(void);
 int internal_func(char *s);
 int is_var(char *s);
 char *find_func(char *name);
@@ -290,7 +293,8 @@ void atom(int *value)
         else sntx_err(SYNTAX); /* erro de sintaxe */
     default:
         sntx_err(SYNTAX); /* erro de sintaxe */
-    }}
+    }
+}
 
 /* Exibe uma mensagem de erro */
 void sntx_err(int error)
@@ -330,7 +334,7 @@ void sntx_err(int error)
 
     temp = p; /* exibe linha contendo erro */
     for(i=0; i<20 && p>p_buf && *p!='\n'; i++, p--);
-    for(i=0; i<30 && p<=temp; i++, p++) printf("%c", *p);
+    for(i=0; i<30 && p<=temp; i++, p++); printf("%c", *p);
 
     longjmp(e_buf, 1); /* retorna para um ponteiro seguro */
 }

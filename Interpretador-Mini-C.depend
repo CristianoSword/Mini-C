@@ -1,0 +1,21 @@
+# depslib dependency file v1.0
+1650393026 source:f:\dev\c ansi\c completo e total\interpretador-mini-c\mclib.c
+	<stdio.h>
+	<stdlib.h>
+
+1650393646 source:f:\dev\c ansi\c completo e total\interpretador-mini-c\minic.c
+	<stdio.h>
+	<setjmp.h>
+	<math.h>
+	<ctype.h>
+	<stdlib.h>
+	<string.h>
+
+1650394077 source:f:\dev\c ansi\c completo e total\interpretador-mini-c\parser.c
+	<setjmp.h>
+	<math.h>
+	<ctype.h>
+	<stdlib.h>
+	<string.h>
+	<stdio.h>
+

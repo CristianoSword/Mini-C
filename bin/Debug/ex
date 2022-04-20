@@ -1,0 +1,9 @@
+int i;
+i=20;
+
+main()
+{
+	print(i);
+	puts("oi")
+	
+}
