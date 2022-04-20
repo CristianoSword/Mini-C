@@ -5,20 +5,19 @@ Interpretador em C, implementando um  subconjunto de instruções C
 # Lista de Recursos no interpretador Mini-C:
 
 - [ ] Funções parametrizadas com variáveis locais.
-- [ ] Recursividade.
-- [ ] O comando if.
-- [ ] Os laços do-while, while e for.
-- [ ] Variáveis int e char.
-- [ ] Variáveis globais.
+- [x] Recursividade.
+- [x] O comando if.
+- [x] Os laços do-while, while e for.
+- [x] Variáveis int e char.
+- [x] Variáveis globais.
 - [ ] Constantes int e char.
 - [ ] Constante string (implementação limitada).
-- [ ] O comando return, com ou sem valor.
+- [x] O comando return, com ou sem valor.
 - [ ] Um número limitado de funções da biblioteca padrão.
-- [ ] Estes operadores: +, -, *, %, <, >, <=, >=, ==, !=, - unário e + unário.
-- [ ] Suporte a parênteses.
+- [x] Estes operadores: +, -, *, %, <, >, <=, >=, ==, !=, - unário e + unário.
+- [x] Suporte a parênteses.
 - [ ] Funções retornando inteiros.
 - [x] Comentários.
-- [ ] Funções retornando inteiros.
 - [ ] Programas exemplos para demonstração do Mini-C.
 
 Restrições:
