@@ -16,7 +16,7 @@ Interpretador em C, implementando um  subconjunto de instruções C
 - [ ] Um número limitado de funções da biblioteca padrão.
 - [x] Estes operadores: +, -, *, %, <, >, <=, >=, ==, !=, - unário e + unário.
 - [x] Suporte a parênteses.
-- [ ] Funções retornando inteiros.
+- [x] Funções retornando inteiros.
 - [x] Comentários.
 - [ ] Programas exemplos para demonstração do Mini-C.
 
