@@ -18,6 +18,7 @@ Interpretador em C, implementando um  subconjunto de instruções C
 - [x] Suporte a parênteses.
 - [x] Funções retornando inteiros.
 - [x] Comentários.
+- [ ] Refatorar sintaxe e analisador léxico.
 - [ ] Programas exemplos para demonstração do Mini-C.
 
 Restrições:
