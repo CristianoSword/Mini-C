@@ -6,8 +6,8 @@ Interpretador em C, implementando um  subconjunto de instruções C
 
 - [x] Funções parametrizadas com variáveis locais.
 - [x] Recursividade.
-- [x] O comando if.
-- [x] Os laços do-while, while e for.
+- [x] O comando IF.
+- [x] Os laços DO-WHILE, WHILE e FOR.
 - [x] Variáveis int e char.
 - [x] Variáveis globais.
 - [x] Constantes int e char.
@@ -24,7 +24,7 @@ Interpretador em C, implementando um  subconjunto de instruções C
 Restrições:
 <br>
 -O Comando Switch não será implementado.<br>
--Os comandos if, while, do e for devem estar entre blocos de código de chaves.
+-Os comandos IF, WHILE, DO e FOR devem estar entre blocos de código de chaves.
 
 
 
