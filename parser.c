@@ -1,5 +1,5 @@
-/* Analisador recursivo descendente de expressoes inteiras que pode
-*  incluir variaveis e chamadas de funcoes*/
+/* Recursive descent parser for integer expressions that can
+*  include variables and function calls*/
 
 #include<setjmp.h>
 #include<math.h>
@@ -16,27 +16,27 @@
 #define PROG_SIZE       10000
 #define FOR_NEST        31
 
-enum tok_types { DELIMETER, IDENTIFIER, NUMBER, KEYWORD, TEMP, STRING, BLOCK };
+enum tok_types { DELIMITER, IDENTIFIER, NUMBER, KEYWORD, TEMP, STRING, BLOCK };
 
 enum tokens { ARG, CHAR, INT, IF, ELSE, FOR, DO, WHILE, SWITCH, RETURN, EOL, FINISHED, END };
 
 enum double_ops { LT=1, LE, GT, GE, EQ, NE };
 
-/* Essas sao as constantes usadas para chamar sntx_err() quando ocorre um erro de sintaxe. Adicione mais se desejar.
-*  SINTAX eh uma mensagem generica de erro usada quando nenhuma outra parece apropriada.*/
+/* These are the constants used to call sntx_err() when a syntax error occurs. Add more if desired.
+*  SYNTAX is a generic error message used when no other seems appropriate.*/
 
 enum error_msg
 {
     SYNTAX, UNBAL_PARENS, NO_EXP, EQUALS_EXPECTED, NOT_VAR, PARAM_ERR, SEMI_EXPECTED, UNBAL_BRACES, FUNC_UNDEF, TYPE_EXPECTED,
-    NEST_FUNC, RET_NOCALL, PAREN_EXPECTED, WHILE_EXPECTED, QUOTE_EXPECTED, NOTE_TEMP, TOO_MANY_LVARS
+    NEST_FUNC, RET_NOCALL, PAREN_EXPECTED, WHILE_EXPECTED, QUOTE_EXPECTED, NOT_TEMP, TOO_MANY_LVARS
 };
 
-extern char *prog ; /* posicao corrente no codigo fonte */
-extern char *p_buf; /* aponta para o inicio da area de carga do programa */
+extern char *prog;  /* current position in source code */
+extern char *p_buf; /* points to the beginning of program load area */
 
-extern jmp_buf e_buf; /* mantem ambiente para longjmp() */
+extern jmp_buf e_buf; /* holds environment for longjmp() */
 
-/* Uma matriz destas estruturas manterá a informação associada com as variaveis globais */
+/* An array of these structures will hold the information associated with global variables */
 
 extern struct var_type {
     char var_name[32];
@@ -44,43 +44,43 @@ extern struct var_type {
     int value;
 } global_vars[NUM_GLOBAL_VARS];
 
-/* Esta eh a pilha de chamadas de funcao */
+/* This is the function call stack */
 extern struct func_type
 {
     char func_name[32];
-    char *loc; /* posicao do ponto de entrada da funcao no arquivo */
+    char *loc; /* position of function entry point in file */
 } func_stack[NUM_FUNC];
 
-/* Tabela de palavras reservadas */
+/* Reserved word table */
 extern struct commands
 {
     char command[20];
     char tok;
 } table[];
 
-/* Funcoes da "Biblioteca padrao" sao declaradas aqui para que possam
-*  ser colocadas na tabela interna de funcoes que segue. */
+/* "Standard library" functions are declared here so they can
+*  be placed in the internal function table that follows. */
 
 int call_getche(void), call_putch(void);
 int call_puts(void), print(void), getnum(void);
 
 struct intern_func_type{
-    char *f_name; /* nome da funcao */
-    int (*p)();  /* ponteiro para funcao */
+    char *f_name; /* function name */
+    int (*p)();   /* pointer to function */
 }intern_func[] ={
     "getche", call_getche,
     "putch", call_putch,
     "puts", call_puts,
     "print", print,
     "getnum", getnum,
-    "", 0 /* NULL termina a lista */
+    "", 0 /* NULL terminates the list */
 };
 
-extern char token[80];   /* representacao string do token */
-extern char token_type;  /* contem o tipo do token */
-extern char tok;         /* representacao interna do token */
+extern char token[80];   /* string representation of token */
+extern char token_type;  /* contains token type */
+extern char tok;         /* internal representation of token */
 
-extern int ret_value;   /* valor de retorno de funcao */
+extern int ret_value;    /* function return value */
 
 void eval_exp(int *value), eval_exp1(int *value);
 void eval_exp2(int *value);
@@ -96,7 +96,7 @@ int is_var(char *s);
 char *find_func(char *name);
 void call(void);
 
-/* ponto de entrada do analisador */
+/* parser entry point */
 void eval_exp(int *value)
 {
     get_token();
@@ -105,31 +105,31 @@ void eval_exp(int *value)
         return;
     }
     if(*token==';'){
-        *value = 0; /* expressao vazia */
+        *value = 0; /* empty expression */
         return;
     }
     eval_exp0(value);
-    putback(); /* devolve ultimo token lido para a entrada */
+    putback(); /* return last read token to input */
 }
 
-/* Processa uma expressao de atribuicao */
+/* Process an assignment expression */
 void eval_exp0(int *value)
 {
-    char temp[ID_LEN]; /* guarda nome da variavel que esta recebendo a atribuicao */
+    char temp[ID_LEN]; /* stores name of variable receiving assignment */
     register int temp_tok;
 
     if(token_type==IDENTIFIER) {
-        if(is_var(token)){ /* se eh um variavel veja se eh uma atribuicao */
+        if(is_var(token)){ /* if it's a variable see if it's an assignment */
             strcpy(temp, token);
             temp_tok = token_type;
             get_token();
-            if(*token=='=') { /* eh um atribuicao */
+            if(*token=='=') { /* it's an assignment */
                 get_token();
-                eval_exp0(value); /* obtem valor a atribuir*/
-                assign_var(temp, *value); /*atribui valor*/
+                eval_exp0(value); /* get value to assign*/
+                assign_var(temp, *value); /*assign value*/
                 return;
             }
-            else{ /* nao eh uma atribuicao */
+            else{ /* not an assignment */
                 putback();
                 strcpy(token, temp);
                 token_type = temp_tok;
@@ -140,12 +140,12 @@ void eval_exp0(int *value)
     eval_exp1(value);
 }
 
-/* Essa matriz eh usada por eval_exp1(). Como alguns compiladores nao permitem inicializar uma
-*  matriz dentro de uma funcao, ela eh definida como uma variavel global */
+/* This array is used by eval_exp1(). Since some compilers don't allow initializing an
+*  array inside a function, it's defined as a global variable */
 
 char relops[7] = { LT, LE, GT, GE, EQ, NE, 0 };
 
-/* Processa operadores relacionais */
+/* Process relational operators */
 void eval_exp1(int *value)
 {
     int partial_value;
@@ -157,7 +157,7 @@ void eval_exp1(int *value)
     if(strchr(relops, op)) {
         get_token();
         eval_exp2(&partial_value);
-            switch(op) { /* efetua a operacao relacional */
+            switch(op) { /* perform relational operation */
             case LT:
                 *value = *value < partial_value;
                 break;
@@ -180,7 +180,7 @@ void eval_exp1(int *value)
         }
 }
 
-/* Soma ou subtrai dois termos */
+/* Add or subtract two terms */
 void eval_exp2(int *value)
 {
     register char op;
@@ -190,7 +190,7 @@ void eval_exp2(int *value)
     while((op = *token) == '+' || op == '-') {
         get_token();
         eval_exp3(&partial_value);
-        switch (op) { /* soma ou subtrai */
+        switch (op) { /* add or subtract */
             case '-':
                 *value = *value - partial_value;
                 break;
@@ -201,7 +201,7 @@ void eval_exp2(int *value)
     }
 }
 
-/* Multiplica ou divide dois fatores */
+/* Multiply or divide two factors */
 void eval_exp3(int *value)
 {
     register char op;
@@ -211,7 +211,7 @@ void eval_exp3(int *value)
     while((op = *token) == '*' || op == '/' || op == '%') {
         get_token();
         eval_exp4(&partial_value);
-        switch (op) { /* mul, div ou modulo */
+        switch (op) { /* mul, div or modulo */
             case '*':
                 *value = *value * partial_value;
                 break;
@@ -226,7 +226,7 @@ void eval_exp3(int *value)
     }
 }
 
-/* eh um + ou - unario */
+/* it's a unary + or - */
 void eval_exp4(int *value)
 {
     register char op;
@@ -241,12 +241,12 @@ void eval_exp4(int *value)
     if(op=='-') *value = - (*value);
 }
 
-/* Processa espressoes com parenteses */
+/* Process expressions with parentheses */
 void eval_exp5(int *value)
 {
     if((*token == '(')) {
         get_token();
-        eval_exp0(value); /* obtem subexpressao */
+        eval_exp0(value); /* get subexpression */
         if(*token != ')') sntx_err(PAREN_EXPECTED);
         get_token();
        }
@@ -254,7 +254,7 @@ void eval_exp5(int *value)
         atom(value);
 }
 
-/* Acha valor de numero, variavel ou funcao */
+/* Find value of number, variable or function */
 void atom(int *value)
 {
     int i;
@@ -262,22 +262,22 @@ void atom(int *value)
     switch(token_type) {
     case IDENTIFIER:
         i = internal_func(token);
-        if(i!= -1) { /* chama funcao da "biblioteca padrao" */
+        if(i!= -1) { /* call "standard library" function */
                 *value = (*intern_func[i].p)();
         }
         else
-        if(find_func(token)) { /* chama a funcao definida pelo usuario */
+        if(find_func(token)) { /* call user-defined function */
                 call();
                 *value = ret_value;
         }
-        else *value = find_var(token); /* obtem valor da variavel */
+        else *value = find_var(token); /* get variable value */
         get_token();
         return;
-    case NUMBER: /* eh uma constante numerica */
+    case NUMBER: /* it's a numeric constant */
         *value = atoi(token);
         get_token();
         return;
-    case DELIMETER: /* veja se eh uma constante caractere */
+    case DELIMITER: /* see if it's a character constant */
         if(*token=='\''){
             *value=*prog;
             prog++;
@@ -286,13 +286,13 @@ void atom(int *value)
             get_token();
             return;
         }
-        if(*token==')') return; /* processa expressao vazia */
-        else sntx_err(SYNTAX); /* erro de sintaxe */
+        if(*token==')') return; /* process empty expression */
+        else sntx_err(SYNTAX); /* syntax error */
     default:
-        sntx_err(SYNTAX); /* erro de sintaxe */
+        sntx_err(SYNTAX); /* syntax error */
     }}
 
-/* Exibe uma mensagem de erro */
+/* Display an error message */
 void sntx_err(int error)
 {
     char *p, *temp;
@@ -300,42 +300,42 @@ void sntx_err(int error)
     int linecount = 0;
 
     static char *e[] = {
-        "erro de sintaxe",
-        "parenteses desbalanceados",
-        "falta uma expressao",
-        "esperado sinal de igual",
-        "nao eh uma variavel",
-        "erro de parametro",
-        "esperado ponto-e-virgula",
-        "chaves desbalanceadas",
-        "funcao nao definida",
-        "esperado identificador de tipo",
-        "excessivas chamadas aninhadas de funcao",
-        "return sem chamada",
-        "esperando parenteses",
-        "esperando whiles",
-        "esperando fechar aspas",
-        "nao eh uma string",
-        "excessivas variaveis locais",
+        "syntax error",
+        "unbalanced parentheses",
+        "missing expression",
+        "expected equals sign",
+        "not a variable",
+        "parameter error",
+        "expected semicolon",
+        "unbalanced braces",
+        "function not defined",
+        "expected type identifier",
+        "excessive nested function calls",
+        "return without call",
+        "expecting parentheses",
+        "expecting while",
+        "expecting closing quote",
+        "not a string",
+        "excessive local variables",
     };
     printf("%s", e[error]);
     p = p_buf;
-    while(p != prog) { /*encontra linha do erro */
+    while(p != prog) { /*find error line */
         p++;
         if(*p == '\r'){
             linecount++;
         }
     }
-    printf(" na linha %d\n", linecount);
+    printf(" on line %d\n", linecount);
 
-    temp = p; /* exibe linha contendo erro */
+    temp = p; /* display line containing error */
     for(i=0; i<20 && p>p_buf && *p!='\n'; i++, p--);
     for(i=0; i<30 && p<=temp; i++, p++) printf("%c", *p);
 
-    longjmp(e_buf, 1); /* retorna para um ponteiro seguro */
+    longjmp(e_buf, 1); /* return to safe pointer */
 }
 
-/* Obtem um token */
+/* Get a token */
 int get_token(void)
 {
      register char *temp;
@@ -344,23 +344,23 @@ int get_token(void)
      temp = token;
      *temp = '\0';
 
-     /* ignora espaco vazio */
+     /* skip whitespace */
      while(iswhite(*prog) && *prog) ++prog;
 
      if(*prog=='\r') {
         ++prog;
         ++prog;
-            /* ignora espaco vazio */
+            /* skip whitespace */
             while(iswhite(*prog) && *prog) ++prog;
      }
 
-    if(*prog=='\0') { /* delimitadores de bloco */
+    if(*prog=='\0') { /* block delimiters */
         *token = '\0';
         tok = FINISHED;
-    return (token_type = DELIMETER);
+    return (token_type = DELIMITER);
     }
 
-    if(strchr("{}", *prog)){  /* delimetadores de bloco */
+    if(strchr("{}", *prog)){  /* block delimiters */
         *temp = *prog;
         temp++;
         *temp = '\0';
@@ -368,12 +368,12 @@ int get_token(void)
     return (token_type = BLOCK);
     }
 
-    /* procura por comentarios */
+    /* look for comments */
     if(*prog == '/')
-        if(*(prog+1) == '*')  /* eh um comentario */
+        if(*(prog+1) == '*')  /* it's a comment */
         {
             prog += 2;
-            do { /* procura por comentarios */
+            do { /* look for comments */
                 while(*prog!='*') prog++;
                     prog++;
                 }
@@ -381,7 +381,7 @@ int get_token(void)
                 prog++;
         }
 
-    if(strchr("!<>=", *prog)) /* eh ou pode ser um operador relacional */
+    if(strchr("!<>=", *prog)) /* is or may be a relational operator */
     {
         switch (*prog)
         {
@@ -422,48 +422,48 @@ int get_token(void)
             *temp = '\0';
             break;
         }
-        if(*token) return (token_type = DELIMETER);
+        if(*token) return (token_type = DELIMITER);
     }
 
-    if(strchr("+-*^/%=;(),'", *prog)){  /* delimetador */
+    if(strchr("+-*^/%=;(),'", *prog)){  /* delimiter */
         *temp = *prog;
-        prog++; /* avanca para a proxima posicao */
+        prog++; /* advance to next position */
         temp++;
         *temp = '\0';
-    return (token_type = DELIMETER);
+    return (token_type = DELIMITER);
     }
 
-    if(*prog=='"') { /* string entre aspas */
+    if(*prog=='"') { /* quoted string */
         prog++;
         while(*prog!='"'&& *prog!='\r') *temp++ = *prog++;
         if(*prog=='\r') sntx_err(SYNTAX);
         prog++; *temp = '\0';
-    return (token_type = DELIMETER);
+    return (token_type = DELIMITER);
     }
 
-    if(isdigit(*prog)) { /* numero */
+    if(isdigit(*prog)) { /* number */
         while(!isdelim(*prog)) *temp++ = *prog++;
         *temp = '\0';
     return(token_type = NUMBER);
     }
 
-    if(isalpha(*prog)) {  /* variavel ou comando */
+    if(isalpha(*prog)) {  /* variable or command */
         while(!isdelim(*prog)) *temp++ = *prog++;
     token_type = TEMP;
     }
 
     *temp = '\0';
 
-    /* verifica se uma string eh um comando ou uma variavel */
+    /* check if a string is a command or a variable */
     if(token_type == TEMP) {
-        tok = look_up(token); /* converte para representacao interna */
+        tok = look_up(token); /* convert to internal representation */
         if(tok) token_type = KEYWORD;
         else token_type = IDENTIFIER;
     }
     return token_type;
  }
 
-/* Devolve um token para a entrada */
+/* Return a token to input */
 void putback(void)
 {
     char *t;
@@ -472,24 +472,24 @@ void putback(void)
     for(; *t; t++) prog--;
 }
 
-/* Procura pela representacao interna de um token na tabela de tokens. */
+/* Look up internal representation of a token in token table. */
 
 int look_up(char *s)
 {
     register int i;
     char *p;
 
-    /* converte para minuscula */
+    /* convert to lowercase */
     p = s;
     while(*p){ *p = tolower(*p); p++; }
 
-    /* verifica se o token está na tabela */
+    /* check if token is in table */
     for(i=0; *table[i].command; i++)
         if(!strcmp(table[i].command,s)) return table[i].tok;
-    return 0; /* comando desconhecido */
+    return 0; /* unknown command */
 }
 
-/* Retorna indice de funcao da biblioteca interna ou -1 se nao encotrada */
+/* Return index of internal library function or -1 if not found */
 int internal_func(char *s)
 {
     int i;
@@ -500,26 +500,16 @@ int internal_func(char *s)
     return -1;
 }
 
-/* Retorna verdadeiro se c é um delimetador */
+/* Return true if c is a delimiter */
 int isdelim(char c)
 {
     if(strchr(" !;,+-<>'/*%^=()", c) || c == 9 || c == '\r' || c == 0) return 1;
     return 0;
 }
 
-/* Retorna 1 se c eh o espaço ou tabulação */
+/* Return 1 if c is space or tab */
 int iswhite(char c)
 {
     if(c==' ' || c== '\t') return 1;
     else return 0;
 }
-
-
-
-
-
-
-
-
-
-
