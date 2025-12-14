@@ -1,9 +1,9 @@
 /*---------------------------------------------
- *  Interpretador Mini C - 0.2
- *  Autor :	Cristiano Camacho
- *  Data  :	17/03/2022 a 19/04/2022
- *  Desc  : Interpretador em C, implementando um
- *  subconjunto de C, mais detalhes no readme
+ *  Mini C Interpreter - 0.2
+ *  Author: Cristiano Camacho
+ *  Date:   03/17/2022 to 04/19/2022
+ *  Desc:   Interpreter in C, implementing a
+ *  subset of C, more details in readme
  *
  *--------------------------------------------*/
 
@@ -24,29 +24,29 @@
 #define PROG_SIZE       10000
 #define LOOP_NEST       31
 
-enum tok_types { DELIMETER, IDENTIFIER, NUMBER, KEYWORD, TEMP, STRING, BLOCK };
+enum tok_types { DELIMITER, IDENTIFIER, NUMBER, KEYWORD, TEMP, STRING, BLOCK };
 
-/* Adicione outros tokens C aqui */
+/* Add other C tokens here */
 enum tokens { ARG, CHAR, INT, IF, ELSE, FOR, DO, WHILE, SWITCH, RETURN, EOL, FINISHED, END };
 
-/* Adicione outros operadores duplos (tais como ->) aqui */
+/* Add other double operators (such as ->) here */
 enum double_ops { LT=1, LE, GT, GE, EQ, NE };
 
-/* Essas sao as constantes usadas para chamar sntx_err() quando ocorre um erro de sintaxe. Adicione mais se desejar.
-*  SINTAX eh uma mensagem generica de erro usada quando nenhuma outra parece apropriada.*/
+/* These are the constants used to call sntx_err() when a syntax error occurs. Add more if desired.
+*  SYNTAX is a generic error message used when no other seems appropriate.*/
 
 enum error_msg
 {
     SYNTAX, UNBAL_PARENS, NO_EXP, EQUALS_EXPECTED, NOT_VAR, PARAM_ERR, SEMI_EXPECTED, UNBAL_BRACES, FUNC_UNDEF, TYPE_EXPECTED,
-    NEST_FUNC, RET_NOCALL, PAREN_EXPECTED, WHILE_EXPECTED, QUOTE_EXPECTED, NOTE_TEMP, TOO_MANY_LVARS
+    NEST_FUNC, RET_NOCALL, PAREN_EXPECTED, WHILE_EXPECTED, QUOTE_EXPECTED, NOT_TEMP, TOO_MANY_LVARS
 };
 
-char *prog ; /* posicao corrente no codigo fonte */
-char *p_buf; /* aponta para o inicio da area de carga do programa */
+char *prog;  /* current position in source code */
+char *p_buf; /* points to the beginning of program load area */
 
-jmp_buf e_buf; /* mantem ambiente para longjmp() */
+jmp_buf e_buf; /* holds environment for longjmp() */
 
-/* Uma matriz destas estruturas manterá a informação associada com as variaveis globais */
+/* An array of these structures will hold the information associated with global variables */
 
 struct var_type
 {
@@ -57,21 +57,21 @@ struct var_type
 
 struct var_type local_var_stack[NUM_LOCAL_VARS];
 
-/* Esta eh a pilha de chamadas de funcao */
+/* This is the function call stack */
 struct func_type
 {
     char func_name[ID_LEN];
-    char *loc; /* posicao do ponto de entrada da funcao no arquivo */
+    char *loc; /* position of function entry point in file */
 } func_table[NUM_FUNC];
 
 int call_stack[NUM_FUNC];
 
-/* Tabela de busca de palavras-chaves */
+/* Keyword lookup table */
 struct commands
 {
-    char commmand[20];
+    char command[20];
     char tok;
-} table[] = {   /* comandos devem ser escritos */
+} table[] = {   /* commands must be written in lowercase */
     "if", IF,
     "else", ELSE,
     "for", FOR,
@@ -81,23 +81,23 @@ struct commands
     "int", INT,
     "return", RETURN,
     "end", END,
-    "", END /* marca fim da tabela */
+    "", END /* marks end of table */
 };
 
 char token[80];
 char token_type, tok;
 
-int functos; /* indice para o topo da pilha de chamadas de funcao */
+int functos; /* index to top of function call stack */
 
-int func_index; /* indice na tabela de funcoes */
-int gvar_index; /* indice na tabela global de varaiveis */
-int lvartos;    /* indice para a pilha de variaveis locais */
+int func_index;  /* index in function table */
+int gvar_index;  /* index in global variable table */
+int lvartos;     /* index to local variable stack */
 
-int ret_value;  /* valor de retorno de funcao */
+int ret_value;   /* function return value */
 
 void print(void), prescan(void);
 void decl_global(void), call(void), putback(void);
-void decl_local(void),local_push(struct var_type i);
+void decl_local(void), local_push(struct var_type i);
 void eval_exp(int *value), sntx_err(int error);
 void exec_if(void), find_eob(void), exec_for(void);
 void get_params(void), get_args(void);
@@ -112,39 +112,39 @@ char *find_func(char *name);
 int main(int argc, char **argv)
 {
     if(argc!=2) {
-        printf("Uso: minic <nome_de_arquivo>\n");
+        printf("Usage: minic <filename>\n");
         exit(1);
     }
 
-    /* aloca memoria para o programa */
+    /* allocate memory for the program */
     if((p_buf=(char *) malloc(PROG_SIZE))==NULL){
-        printf("Falha de alocacao");
+        printf("Allocation failure");
         exit(1);
     }
 
-    /* carrega o programa a executar */
+    /* load the program to execute */
     if(!load_program(p_buf, argv[1])) exit(1);
-    if(setjmp(e_buf)) exit(1); /* inicializa buffer de long jump */
+    if(setjmp(e_buf)) exit(1); /* initialize long jump buffer */
 
-    gvar_index = 0; /* inicializa indice de variaveis globais */
-    /* define um ponteiro de programa para o inicio do buffer */
+    gvar_index = 0; /* initialize global variable index */
+    /* set program pointer to beginning of buffer */
     prog = p_buf;
 
-    prescan(); /* procura a posicao de todas as funcoes e variaveis globais no programa */
+    prescan(); /* find position of all functions and global variables in program */
 
-    lvartos = 0;    /* inicializa indice de variaveis locais */
-    functos = 0;    /* inicializa o indexa pilha de CALL */
-    /* prepara chamada de main() */
-    prog = find_func("main"); /* acha o ponto de inicio do programa */
-    prog--; /* volta para o inicial ( */
+    lvartos = 0;    /* initialize local variable index */
+    functos = 0;    /* initialize CALL stack index */
+    /* prepare main() call */
+    prog = find_func("main"); /* find program start point */
+    prog--; /* go back to initial ( */
     strcpy(token, "main");
 
-    call(); /* inicia interpretacao main() */
+    call(); /* start interpreting main() */
     return 0;
 }
 
-/* Interpreta um unico comando ou bloco de codigo. Quando interp_block() retorna da sua chamada inicial,
-   a chave final (ou um return) foi encontrada em main().
+/* Interprets a single statement or code block. When interp_block() returns from its initial call,
+   the final brace (or a return) was found in main().
 */
 
 void interp_block(void)
@@ -155,42 +155,42 @@ void interp_block(void)
     do {
         token_type = get_token();
 
-        /* Se interpretando um unico comando, retorne ao achar o primeiro ;    */
-        /* veja que tipo de token esta pronto */
+        /* If interpreting a single statement, return when finding the first ;    */
+        /* see what type of token is ready */
         if(token_type==IDENTIFIER) {
-            /* nao eh uma palavra-chave, logo processa expressao */
-            putback(); /* devolve token para a entrada para posterior processamento por eval_exp() */
-            eval_exp(&value); /* processa a expressao */
+            /* not a keyword, so process expression */
+            putback(); /* return token to input for later processing by eval_exp() */
+            eval_exp(&value); /* process the expression */
             if(*token!=';') sntx_err(SEMI_EXPECTED);
         }
-        else if(token_type==BLOCK) { /* se delimetadorde bloco... */
-                if(*token=='{') /* for igual a um bloco*/
-                    block = 1;  /* interpretando um bloco nao um comando */
-                else return;    /* eh um }, portanto nao devolve */
+        else if(token_type==BLOCK) { /* if block delimiter... */
+                if(*token=='{') /* if equal to a block*/
+                    block = 1;  /* interpreting a block not a statement */
+                else return;    /* it's a }, so don't return */
         }
-        else /* eh uma paavra chave */
+        else /* it's a keyword */
         switch(tok) {
             case CHAR:
-            case INT:       /* declara variaveis locais */
+            case INT:       /* declare local variables */
                 putback();
                 decl_local();
                 break;
-            case RETURN:    /* retorna da chamada de funcao */
+            case RETURN:    /* return from function call */
                 func_ret();
                 return;
-            case IF:        /* processa um comando if */
+            case IF:        /* process an if statement */
                 exec_if();
                 break;
-            case ELSE:      /* processa um comando else*/
-                find_eob(); /* acha o fim do bloco de else e continua a execucao */
+            case ELSE:      /* process an else statement*/
+                find_eob(); /* find end of else block and continue execution */
                 break;
-            case WHILE:     /* processa um laco while */
+            case WHILE:     /* process a while loop */
                 exec_while();
                 break;
-            case DO:        /* processa um laco do-while */
+            case DO:        /* process a do-while loop */
                 exec_do();
                 break;
-            case FOR:       /* processa um laco for */
+            case FOR:       /* process a for loop */
                 exec_for();
                 break;
             case END:
@@ -199,7 +199,7 @@ void interp_block(void)
     } while(tok != FINISHED && block);
 }
 
-/* carrega um programa */
+/* load a program */
 int load_program(char *p, char *fname)
 {
     FILE *fp;
@@ -211,45 +211,45 @@ int load_program(char *p, char *fname)
         *p = getc(fp);
         p++; i++;
     } while(!feof(fp) && i<PROG_SIZE);
-    if(*(p-2)==0x1a) *(p-2) = '\0'; /* encerra o programa com nulo */
+    if(*(p-2)==0x1a) *(p-2) = '\0'; /* terminate program with null */
 
     else *(p-1) = '\0';
     fclose(fp);
     return 1;
 }
 
-/* Acha uma posicao de todas as funcoes no programa e armazena todas as varaiveis globais */
+/* Find position of all functions in program and store all global variables */
 void prescan(void)
 {
     char *p;
     char temp[32];
-    int brace = 0; /* Quando 0, esta variavel indica que a posicao corrente no codigo-fonte
-    esta fora de qualquer funcao */
+    int brace = 0; /* When 0, this variable indicates that current position in source code
+    is outside of any function */
 
     p = prog;
     func_index = 0;
     do {
-        while(brace) { /* deixa de lado o codigo dentro das funcoes */
+        while(brace) { /* skip code inside functions */
                 get_token();
                 if(*token=='{') brace++;
                 if(*token=='}') brace--;
         }
         get_token();
 
-        if(tok==CHAR || tok==INT) {     /* eh uma variavel global */
+        if(tok==CHAR || tok==INT) {     /* it's a global variable */
             putback();
             decl_global();
         }
         else if(token_type==IDENTIFIER) {
             strcpy(temp, token);
             get_token();
-            if(*token=='(') {   /* tem de ser uma funcao */
+            if(*token=='(') {   /* must be a function */
                 func_table[func_index].loc = prog;
                 strcpy(func_table[func_index].func_name, temp);
                 func_index++;
                 while(*prog!=')') prog++;
                 prog++;
-                /* agora prog apont para o abre-chaves da funcao */
+                /* now prog points to opening brace of function */
                }
                else putback();
         }
@@ -258,32 +258,30 @@ void prescan(void)
     prog = p;
   }
 
-/* devolve o ponto de entrada da funcao especializada, devolve NULL se nao encontrou */
+/* returns entry point of specified function, returns NULL if not found */
 char *find_func(char *name)
 {
     register int i;
 
     for(i=0; i<func_index; i++)
-        if(!strcpy(name, func_table[i].func_name))
+        if(!strcmp(name, func_table[i].func_name))
             return func_table[i].loc;
     return NULL;
 }
 
-/* declara uma variavel global */
+/* declare a global variable */
 void decl_global(void)
 {
     int vartype;
 
-    get_token(); /* obtem um tipo */
+    get_token(); /* get type */
 
     vartype = tok;
 
-
-
-    do{     /* processa lista separada por virgulas */
+    do{     /* process comma-separated list */
         global_vars[gvar_index].var_type = vartype;
-        global_vars[gvar_index].value = 0; /* inicializa com zero */
-        get_token();  /* obtem nome */
+        global_vars[gvar_index].value = 0; /* initialize with zero */
+        get_token();  /* get name */
         strcpy(global_vars[gvar_index].var_name, token);
         get_token();
         gvar_index++;
@@ -291,53 +289,52 @@ void decl_global(void)
     if(*token!=';') sntx_err(SEMI_EXPECTED);
 }
 
-/* declara uma variavel local */
+/* declare a local variable */
 void decl_local(void)
 {
     struct var_type i;
 
-    get_token();   /* obtem tipo */
+    get_token();   /* get type */
 
     i.var_type = tok;
-    i.value = 0; /* inicializa com zero */
+    i.value = 0; /* initialize with zero */
 
-    do{     /* processa lista separada por virgulas */
-        get_token();    /* obtem nome da variavel */
+    do{     /* process comma-separated list */
+        get_token();    /* get variable name */
         strcpy(i.var_name, token);
         local_push(i);
         get_token();
-        //gvar_index++;
     }while(*token==',');
         if(*token!=';') sntx_err(SEMI_EXPECTED);
 }
 
-/* chama uma funcao */
+/* call a function */
 void call(void)
 {
     char *loc, *temp;
     int lvartemp;
 
-    loc = find_func(token);  /* encontra ponto de enrada da funcao */
+    loc = find_func(token);  /* find function entry point */
 
     if(loc==NULL)
-        sntx_err(FUNC_UNDEF); /* funcao nao definida */
+        sntx_err(FUNC_UNDEF); /* function not defined */
     else {
-        lvartemp = lvartos; /* guarda indice da pilha de var locais */
+        lvartemp = lvartos; /* save local var stack index */
 
-        get_args();  /* obtem argumentos da funcao */
-        temp = prog; /* salva endereco de retorno*/
-        func_push(lvartemp); /* salva indice da pilha de var locais */
+        get_args();  /* get function arguments */
+        temp = prog; /* save return address*/
+        func_push(lvartemp); /* save local var stack index */
 
-        prog = loc; /* redefine prog para inicio da funcao */
-        get_params(); /* carrega os parametros da funcao com os valores dos argumentos */
+        prog = loc; /* reset prog to start of function */
+        get_params(); /* load function parameters with argument values */
 
-        interp_block(); /* interpreta a funcao */
-        prog = temp;    /* redefine o ponteiro de programa */
-        lvartos = func_pop();  /* redefine a pilha de car locais */
+        interp_block(); /* interpret the function */
+        prog = temp;    /* reset program pointer */
+        lvartos = func_pop();  /* reset local var stack */
     }
 }
 
-/* empilha os argumentos de uma funcao na pilha de variaveis locais */
+/* push function arguments onto local variable stack */
 void get_args(void)
 {
     int value, count, temp[NUM_PARAMS];
@@ -347,15 +344,15 @@ void get_args(void)
     get_token();
     if(*token!='(') sntx_err(PAREN_EXPECTED);
 
-    /* processa uma lista de valores separados por virgulas */
+    /* process comma-separated list of values */
     do {
         eval_exp(&value);
-        temp[count] = value;  /* salva temporariamente */
+        temp[count] = value;  /* temporarily save */
         get_token();
         count++;
     }while(*token==',');
     count--;
-    /* agora, empilha em local_car_stack na ordem invertida */
+    /* now, push onto local_var_stack in reverse order */
     for(; count>=0; count--) {
         i.value = temp[count];
         i.var_type = ARG;
@@ -363,14 +360,14 @@ void get_args(void)
     }
 }
 
-/* obtem parametros da funcao */
+/* get function parameters */
 void get_params(void)
 {
     struct var_type *p;
     int i;
 
     i=lvartos-1;
-    do{     /* processa lista de parametros separados por virgulas */
+    do{     /* process comma-separated parameter list */
         get_token();
         p = &local_var_stack[i];
         if(*token!=')') {
@@ -378,7 +375,7 @@ void get_params(void)
             p->var_type = token_type;
             get_token();
 
-            /* liga o nome do parametro com argumento que já está na pilha de variaveis locais */
+            /* bind parameter name with argument already on local variable stack */
             strcpy(p->var_name, token);
             get_token();
             i--;
@@ -388,19 +385,19 @@ void get_params(void)
     if(*token!=')') sntx_err(PAREN_EXPECTED);
 }
 
-/* retorna de uma funcao */
+/* return from a function */
 void func_ret(void)
 {
     int value;
 
     value = 0;
-    /* obtem valor de retorno, se houver */
+    /* get return value, if any */
     eval_exp(&value);
 
     ret_value = value;
 }
 
-/* Empilha uma variavel local */
+/* Push a local variable */
 void local_push(struct var_type i)
 {
     if(lvartos>NUM_LOCAL_VARS)
@@ -410,7 +407,7 @@ void local_push(struct var_type i)
     lvartos++;
 }
 
-/* Desempilha indice na pilha de variaveis locais */
+/* Pop index from local variable stack */
 func_pop(void)
 {
     functos--;
@@ -418,21 +415,21 @@ func_pop(void)
         return(call_stack[functos]);
 }
 
-/* Empilha indice da pilha de variaveis locais */
+/* Push local variable stack index */
 void func_push(int i)
 {
     if(functos>NUM_FUNC)
         sntx_err(NEST_FUNC);
-    call_stack[functos] = 1;
+    call_stack[functos] = i;
     functos++;
 }
 
-/* Atribui um valor a uma variavel */
+/* Assign a value to a variable */
 void assign_var(char *var_name, int value)
 {
     register int i;
 
-    /* primeiro, veja se eh uma varaivel local */
+    /* first, see if it's a local variable */
     for(i=lvartos-1; i>=call_stack[functos-1]; i--) {
         if(!strcmp(local_var_stack[i].var_name, var_name)) {
             local_var_stack[i].value = value;
@@ -440,46 +437,46 @@ void assign_var(char *var_name, int value)
         }
     }
     if(i < call_stack[functos-1])
-        /* se nao eh local, tente na tabela de variaveis globais */
-        for(i=0 ;i<NUM_GLOBAL_VARS; i++)
+        /* if not local, try global variable table */
+        for(i=0; i<NUM_GLOBAL_VARS; i++)
             if(!strcmp(global_vars[i].var_name, var_name)) {
                 global_vars[i].value = value;
                 return;
             }
-        sntx_err(NOT_VAR);   /* variavel nao encontrada */
+        sntx_err(NOT_VAR);   /* variable not found */
 }
 
-/* encontra o valor de uma variavel */
+/* find the value of a variable */
 int find_var(char *s)
 {
     register int i;
 
-    /* primeiro, veja se eh uma variavel local */
-    for(i=lvartos-1; i>=call_stack[functos-1] ;i--)
+    /* first, see if it's a local variable */
+    for(i=lvartos-1; i>=call_stack[functos-1]; i--)
         if(!strcmp(local_var_stack[i].var_name, token))
             return local_var_stack[i].value;
 
-    /* se nao for local, tente na tabela de variaveis globais */
-    for(i=0; i<NUM_GLOBAL_VARS ;i++)
+    /* if not local, try global variable table */
+    for(i=0; i<NUM_GLOBAL_VARS; i++)
         if(!strcmp(global_vars[i].var_name, s))
             return global_vars[i].value;
 
-    sntx_err(NOT_VAR);   /* variavel nao encontrada */
+    sntx_err(NOT_VAR);   /* variable not found */
 }
 
-/* Determina se um identificador eh uma variavel.
-   Retorna 1 se a variavel eh encontrada. 0 caso contrario.
+/* Determine if an identifier is a variable.
+   Returns 1 if variable is found. 0 otherwise.
 */
 int is_var(char *s)
 {
     register int i;
 
-    /* primeiro, veja se eh uma variavel local */
-    for(i=lvartos-1; i>=call_stack[functos-1] ;i--)
+    /* first, see if it's a local variable */
+    for(i=lvartos-1; i>=call_stack[functos-1]; i--)
         if(!strcmp(local_var_stack[i].var_name, token))
             return 1;
 
-    /* se nao for local, tente  variaveis globais */
+    /* if not local, try global variables */
     for(i=0; i<NUM_GLOBAL_VARS; i++)
         if(!strcmp(global_vars[i].var_name, s))
             return 1;
@@ -487,62 +484,62 @@ int is_var(char *s)
     return 0;
 }
 
-/* Executa um comando IF */
+/* Execute an IF statement */
 void exec_if(void)
 {
     int cond;
-    eval_exp(&cond); /* obtem expressao esquerda */
+    eval_exp(&cond); /* get left expression */
 
-    if(cond) {  /* eh verdadeira, portanto processa alvo do IF */
+    if(cond) {  /* it's true, so process IF target */
         interp_block();
     }
-    else{   /* caso contrario, ignore o bloco de IF e processe o ELSE, se existir */
-        find_eob();  /* acha o fim da proxima linha */
+    else{   /* otherwise, skip IF block and process ELSE, if it exists */
+        find_eob();  /* find end of next line */
         get_token();
 
         if(tok!=ELSE) {
-            putback();  /* devolve o token se nao eh ELSE */
+            putback();  /* return token if not ELSE */
             return;
         }
         interp_block();
     }
 }
 
-/* Executa um laço while */
+/* Execute a while loop */
 void exec_while(void)
 {
     int cond;
     char *temp;
 
     putback();
-    temp = prog;  /* salva a posicao do inicio do laço while */
+    temp = prog;  /* save position of while loop start */
     get_token();
-    eval_exp(&cond);    /* verifica a expressao condicional */
-    if(cond) interp_block();  /* se verdadeira, interpreta */
-        else{   /* caso contrario, ignore o laco */
+    eval_exp(&cond);    /* check conditional expression */
+    if(cond) interp_block();  /* if true, interpret */
+        else{   /* otherwise, skip loop */
             find_eob();
             return;
         }
-        prog = temp; /* volra para o inicio do laco */
+        prog = temp; /* return to loop start */
 }
 
-/* Executa um laco DO */
+/* Execute a DO loop */
 void exec_do(void)
 {
     int cond;
     char *temp;
 
     putback();
-    temp = prog; /* salva posicao do inicio do laco do */
-    get_token(); /* obtem inicio do laco */
-    interp_block(); /* interpreta o laço */
+    temp = prog; /* save position of do loop start */
+    get_token(); /* get loop start */
+    interp_block(); /* interpret loop */
     get_token();
     if(tok!=WHILE) sntx_err(WHILE_EXPECTED);
-    eval_exp(&cond); /* verifica a condicao do laco */
-    if(cond) prog = temp; /* se verdadeira, repete; caso contrario, continua */
+    eval_exp(&cond); /* check loop condition */
+    if(cond) prog = temp; /* if true, repeat; otherwise, continue */
 }
 
-/* Acha o fim do bloco */
+/* Find end of block */
 void find_eob(void)
 {
     int brace;
@@ -556,7 +553,7 @@ void find_eob(void)
     }while(brace);
 }
 
-/* Executa um laco for */
+/* Execute a for loop */
 void exec_for(void)
 {
     int cond;
@@ -564,37 +561,30 @@ void exec_for(void)
     int brace;
 
     get_token();
-    eval_exp(&cond); /* inicializa a expressao */
+    eval_exp(&cond); /* initialization expression */
     if(*token!=';') sntx_err(SEMI_EXPECTED);
     prog++;
     temp = prog;
     for(;;) {
-        eval_exp(&cond); /* verifica a condicao */
+        eval_exp(&cond); /* check condition */
         if(*token!=';') sntx_err(SEMI_EXPECTED);
-        prog++;     /* passa do ; */
+        prog++;     /* pass the ; */
         temp2 = prog;
 
-        /* Acha o inicio do bloco do for */
+        /* Find start of for block */
         brace = 1;
         while(brace) {
             get_token();
             if(*token=='(') brace++;
             if(*token==')') brace--;
         }
-        if(cond) interp_block();   /* se verdadeiro, interpreta */
-            else{                  /* caso contrario, igmora o laco */
+        if(cond) interp_block();   /* if true, interpret */
+            else{                  /* otherwise, skip loop */
                 find_eob();
                 return;
             }
             prog = temp2;
-            eval_exp(&cond);        /* efetua o incremento */
-            prog = temp;            /* volta para o inicio */
+            eval_exp(&cond);        /* perform increment */
+            prog = temp;            /* return to start */
     }
 }
-
-
-
-
-
-
-
